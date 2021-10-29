@@ -63,6 +63,62 @@ def computeInstruction(stack, ip, memory, registers):
         # prevent overflow
         registers[registerIndex] = registers[registerIndex] & 0x00FF
         ip+=1
+    elif opcode >> 12 == 8:
+        # set of opcodes starting with 8
+        registerIndexX = (opcode & 0x0F00) >> 8
+        registerIndexY = (opcode & 0x00F0) >> 4
+        x = registers[registerIndexX]
+        y = registers[registerIndexY]
+
+        cmd = (opcode & 0x000F)
+        
+        if cmd == 0:
+            # Vx = Vy	Sets VX to the value of VY. 
+            registers[registerIndexX] = y
+        elif cmd == 1:
+            # Vx |= Vy	Sets VX to VX or VY. (Bitwise OR operation);
+            registers[registerIndexX] = x | y
+        elif cmd == 2:
+            # Vx &= Vy	Sets VX to VX and VY. (Bitwise AND operation);
+            registers[registerIndexX] = x & y
+        elif cmd == 3:
+            # Vx ^= Vy	Sets VX to VX xor VY.
+            registers[registerIndexX] = x ^ y
+        elif cmd == 4:
+            # Vx += Vy	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not.            
+            registers[registerIndexX]+=y
+            if registers[registerIndexX] & 0xF0000 == 1:
+                registers[registerIndexX] = 0
+                registers[0xF] = 1 
+            else:
+                registers[0xF] = 0
+        elif cmd == 5:
+            # Vx -= Vy	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
+            if y > x:
+                registers[0xF] = 0
+                registers[registerIndexX]-=y
+            else:
+                registers[0xF] = 1
+                registers[registerIndexX]-=y + 0x100
+        elif cmd == 6:
+            # Vx >>= 1	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.[b]
+            registers[0xF] = x & 0x000F
+            registers[registerIndexX] = x >> 1
+        elif cmd == 7:
+            # Vx = Vy - Vx	Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not.
+            if x > y:
+                registers[0xF] = 0
+                registers[registerIndexX] = y - x
+            else:
+                registers[0xF] = 1
+                registers[registerIndexX] = (y - x) + 0x100
+        elif cmd == 8:
+            # Vx <<= 1	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.[b]
+            registers[0xF] = (x & 0xF000) >> 12
+            registers[registerIndexX] = x << 1
+        
+        ip+=1
+            
         
     
     return(stack, ip, memory, registers)
@@ -75,15 +131,13 @@ def __clearDisplay():
 
 
 
-# 8XY0	Assig	Vx = Vy	Sets VX to the value of VY.
-# 8XY1	BitOp	Vx |= Vy	Sets VX to VX or VY. (Bitwise OR operation);
-# 8XY2	BitOp	Vx &= Vy	Sets VX to VX and VY. (Bitwise AND operation);
-# 8XY3[a]	BitOp	Vx ^= Vy	Sets VX to VX xor VY.
-# 8XY4	Math	Vx += Vy	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not.
-# 8XY5	Math	Vx -= Vy	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
-# 8XY6[a]	BitOp	Vx >>= 1	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.[b]
-# 8XY7[a]	Math	Vx = Vy - Vx	Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not.
-# 8XYE[a]	BitOp	Vx <<= 1	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.[b]
+
+
+
+
+
+
+
 # 9XY0	Cond	if (Vx != Vy)	Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block);
 # ANNN	MEM	I = NNN	Sets I to the address NNN.
 # BNNN	Flow	PC = V0 + NNN	Jumps to the address NNN plus V0.
