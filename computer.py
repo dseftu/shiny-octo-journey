@@ -1,15 +1,17 @@
-def computeInstruction(stack, ip, memory, registers):
+import pygame
+
+
+
+def computeInstruction(stack, ip, memory, registers, screenData):
     opcode = memory[stack[-1] + ip]
     # take opcode and perform action
     if opcode == 0x00E0:
-        __clearDisplay()
+        clearDisplay(screenData)
         ip+=1
     elif opcode == 0x00EE:
         print("computer was instructed to return")
         stack.pop()
-        # if there is anything left, set IP to it.  Otherwise, an empty stack indicates halt.
-        if len(stack)>0:
-            ip=stack[-1]+1
+        ip=0
     elif opcode >> 12 == 0:
         # Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN. 
         # Not necessary for most ROMs.
@@ -20,10 +22,9 @@ def computeInstruction(stack, ip, memory, registers):
     elif opcode >> 12 == 2:
         # *(0xNNN)()	Calls subroutine at NNN.
         # update stack pointer
-        stack[-1]=ip
+        stack[-1]=ip+stack[-1]+1
         ip = 0
         stack.append(opcode & 0x0FFF)
-        print(stack)
     elif opcode >> 12 == 3:
         # if (Vx == NN)	Skips the next instruction if VX equals NN.
         #  (Usually the next instruction is a jump to skip a code block);
@@ -118,31 +119,71 @@ def computeInstruction(stack, ip, memory, registers):
             registers[registerIndexX] = x << 1
         
         ip+=1
-            
-        
+    elif opcode >> 12 == 9:
+        # if (Vx != Vy)	Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block);
+        registerIndexX = (opcode & 0x0F00) >> 8
+        registerIndexY = (opcode & 0x00F0) >> 4
+        if (registers[registerIndexX] != registers[registerIndexY]):
+            ip+=1
+        ip+=1
+    elif opcode >> 12 == 0xA:
+        # MEM	I = NNN	Sets I to the address NNN.
+        registers[16] = opcode & 0x0FFF
+        ip+=1
+    elif opcode >> 12 == 0xB:
+        # PC = V0 + NNN	Jumps to the address NNN plus V0.
+        ip = (opcode & 0x0FFF) + registers[0]
+        ip+=1
+    elif opcode >> 12 == 0xC:
+        # Vx = rand() & NN	Sets VX to the result of a bitwise and operation 
+        # on a random number (Typically: 0 to 255) and NN.
+        raise NotImplementedError
+    elif opcode >> 12 == 0xD:
+        # draw(Vx, Vy, N)	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. Each row of 8 pixels is read as bit-coded 
+        # starting from memory location I; I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped 
+        # from set to unset when the sprite is drawn, and to 0 if that does not happen
+        registerIndexX = (opcode & 0x0F00) >> 8
+        registerIndexY = (opcode & 0x00F0) >> 4
+        height = (opcode & 0x000F)
+        width = 8
+        x = registers[registerIndexX]
+        y = registers[registerIndexY]
+        i = registers[16]
+
+        for row in range(0,height):
+            data = memory[row + i]
+
+            for col in range(0,width):
+                pixel = data & 0x80
+                if pixel > 0:
+                    if screenData[(x+row)%64][(y+col)%32] == 1:
+                        registers[0xF] = 1
+                    else:
+                        screenData[(x+row)%64][(y+col)%32] = 1
+        ip+=1
     
-    return(stack, ip, memory, registers)
+    return(stack, ip, memory, registers, screenData)
 
 
 
-def __clearDisplay():
-    print("computer was instructed to clear display")
-
-
-
-
-
-
-
+def clearDisplay(screenData):
+    # reset all bits to 0 on screen
+    for x in range(0,64):
+        for y in range(0,32):
+            screenData[x][y] = 0
 
 
 
 
-# 9XY0	Cond	if (Vx != Vy)	Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block);
-# ANNN	MEM	I = NNN	Sets I to the address NNN.
-# BNNN	Flow	PC = V0 + NNN	Jumps to the address NNN plus V0.
-# CXNN	Rand	Vx = rand() & NN	Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
-# DXYN	Disp	draw(Vx, Vy, N)	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. Each row of 8 pixels is read as bit-coded starting from memory location I; I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen
+
+
+
+
+
+
+# DXYN	Disp	draw(Vx, Vy, N)	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. Each row of 8 pixels is read as bit-coded 
+# starting from memory location I; I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped 
+# from set to unset when the sprite is drawn, and to 0 if that does not happen
 # EX9E	KeyOp	if (key() == Vx)	Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block);
 # EXA1	KeyOp	if (key() != Vx)	Skips the next instruction if the key stored in VX is not pressed. (Usually the next instruction is a jump to skip a code block);
 # FX07	Timer	Vx = get_delay()	Sets VX to the value of the delay timer.
@@ -182,3 +223,17 @@ def printState(stack, ip, memory, registers):
     print("stack=%s" % str(stack))
     print("ip=%d" % ip)
     print("next instruction = %s" % hex(memory[stack[-1]+ip]))    
+
+
+
+def drawScreen(screen, screenData):
+    for x in range(0,64):
+        for y in range(0,32):
+            bit = screenData[x][y]
+            pygame.draw.rect(screen, [0, 200*bit, 0], [x*10, y*10, 10, 10], 0)
+    pygame.display.flip()
+
+
+    
+    
+
