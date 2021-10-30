@@ -24,43 +24,51 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
         ip=stack.pop()
 
     elif opcodeType == 0:
+        # 0NNN
         # Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN. 
         # Not necessary for most ROMs.
         raise NotImplementedError
 
     elif opcodeType == 1:
+        # 1NNN        
         # goto NNN;	Jumps to address NNN.
         ip = nnn - 2 # decrement by 2 to account for increment at end
         
     elif opcodeType == 2:
+        # 2NNN
         # *(0xNNN)()	Calls subroutine at NNN.
         # update stack pointer
         stack.append(ip)
         ip = nnn - 2 # decrement by 2 to account for increment at end
 
     elif opcodeType == 3:
+        # 3XNN
         # if (Vx == NN)	Skips the next instruction if VX equals NN.
         #  (Usually the next instruction is a jump to skip a code block);
         if (vx == nn):
             ip+=2
 
     elif opcodeType == 4:
+        # 4XNN
         # if (Vx != NN)	Skips the next instruction if VX does not equal NN. 
         # (Usually the next instruction is a jump to skip a code block);
         if (vx != nn):
             ip+=2
 
     elif opcodeType == 5:
+        # 5XY0
         # if (Vx == Vy)	Skips the next instruction if VX equals VY. 
         # (Usually the next instruction is a jump to skip a code block);        
         if (vx == vy):
             ip+=2
 
     elif opcodeType == 6:
+        # 6XNN
         # Vx = N	Sets VX to NN.       
         registers[registerIndexX] = nn
 
     elif opcodeType == 7:
+        # 7XNN
         # Vx += N	Adds NN to VX. (Carry flag is not changed);      
         registers[registerIndexX] += nn
         registers[registerIndexX] &= 0xff
@@ -68,18 +76,24 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
     elif opcodeType == 8:
         # set of opcodes starting with 8
         if lsb == 0:
+            # 8XY0
             # Vx = Vy	Sets VX to the value of VY. 
             registers[registerIndexX] = vy
         elif lsb == 1:
+            # 8XY1
             # Vx |= Vy	Sets VX to VX or VY. (Bitwise OR operation);
             registers[registerIndexX] = vx | vy
         elif lsb == 2:
+            # 8XY2
             # Vx &= Vy	Sets VX to VX and VY. (Bitwise AND operation);
             registers[registerIndexX] = vx & vy
         elif lsb == 3:
+            # 8XY3
             # Vx ^= Vy	Sets VX to VX xor VY.
             registers[registerIndexX] = vx ^ vy
         elif lsb == 4:
+            raise NotImplementedError
+            # 8XY4
             # Vx += Vy	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not.            
             registers[registerIndexX]+=vy
             if registers[registerIndexX] & 0xF0000 == 1:
@@ -88,6 +102,8 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
             else:
                 registers[0xF] = 0
         elif lsb == 5:
+            raise NotImplementedError
+            # 8XY5
             # Vx -= Vy	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
             if vy > vx:
                 registers[0xF] = 0
@@ -96,10 +112,12 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
                 registers[0xF] = 1
                 registers[registerIndexX]-=vy + 0x100
         elif lsb == 6:
+            # 8XY6
             # Vx >>= 1	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.[b]
             registers[0xF] = vx & 0x000F
             registers[registerIndexX] = vx >> 1
         elif lsb == 7:
+            # 8XY7
             # Vx = Vy - Vx	Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not.
             if vx > vy:
                 registers[0xF] = 0
@@ -107,32 +125,41 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
             else:
                 registers[0xF] = 1
                 registers[registerIndexX] = (vy - vx) + 0x100
-        elif lsb == 8:
+            raise NotImplementedError
+        elif lsb == 0xE:
+            # 8XYE
+            raise NotImplementedError
             # Vx <<= 1	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.[b]
             registers[0xF] = (vx & 0xF000) >> 12
             registers[registerIndexX] = vx << 1
         
     elif opcodeType == 9:
+        # 9XY0
         # if (Vx != Vy)	Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block);
         if (vx != vy):
             ip+=2
 
     elif opcodeType == 0xA:
+        # ANNN
         # MEM	I = NNN	Sets I to the address NNN.
         registers[16] = nnn
 
     elif opcodeType == 0xB:
+        # BNNN
         # PC = V0 + NNN	Jumps to the address NNN plus V0.
         ip = nnn + v0
 
     elif opcodeType == 0xC:
+        # CVNN
         # Vx = rand() & NN	Sets VX to the result of a bitwise and operation 
         # on a random number (Typically: 0 to 255) and NN.
         randNum = random.randrange(0,256)
         nn = opcode & 0x00FF
         registers[registerIndexX] = randNum & nn
+        raise NotImplementedError
 
     elif opcodeType == 0xD:
+        # DXYN
         # draw(Vx, Vy, N)	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. Each row of 8 pixels is read as bit-coded 
         # starting from memory location I; I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped 
         # from set to unset when the sprite is drawn, and to 0 if that does not happen
@@ -142,12 +169,12 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
         xStart = vx
         yStart = vy
 
-        for xOffset in range(0,height):
-            spriteLine = memory[xOffset + i]
+        for yOffset in range(0,height):
+            spriteLine = memory[yOffset + i]
 
-            for yOffset in range(0,width):
+            for xOffset in range(0,width):
                 # this nabs the current pixel of interest in the sprite line
-                thisPixel = (spriteLine & (0x80 >> yOffset)) >> (7-yOffset)
+                thisPixel = (spriteLine & (0x80 >> xOffset)) >> (7-xOffset)
 
                 # determine the current state of the pixel
                 currentPixelStatePosition = (xStart + xOffset + (yStart + yOffset) * 64) % 2048
@@ -183,14 +210,9 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
             raise NotImplementedError
             registers[registerIndexX] = key
 
-        elif nn==0x0A:
+        elif nn==0x15:
             # FX15	Timer	delay_timer(Vx)	Sets the delay timer to VX.
             dt = vx
-
-        elif nn==0x15:            
-            raise NotImplementedError
-            if keypressed == x:
-                ip+=2
 
         elif nn==0x18:
             # FX18	Sound	sound_timer(Vx)	Sets the sound timer to VX.
@@ -199,6 +221,7 @@ def computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypres
         elif nn==0x1E:
             # FX1E	MEM	I += Vx	Adds VX to I. VF is not affected.[c]
             registers[16]+=vx
+            raise NotImplementedError
 
         elif nn==0x29:
             # FX29	MEM	I = sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
