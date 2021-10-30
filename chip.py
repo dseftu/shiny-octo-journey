@@ -7,13 +7,13 @@ import computer
 
 memory = [0] * 4096
 registers = [0] * 17 # the 17th register will serve as the I register
-stack = [0x200] # starting at 0x200 per reference
-ip = 0
+stack = [] # starting at 0x200 per reference
+ip = 0x200
 dt = 0
 st = 0
 ipInHex = hex(ip)
 
-screenData = [[0 for y in range(32)] for x in range(64)]
+screenData = [0] * 64 * 32
 
 # default sprites
 sprites = [
@@ -39,19 +39,27 @@ for i in range(0,len(sprites)):
     memory[i] = sprites[i]
 
 # sample program (call subroutine that counts to ten, then return, then halts)
-program = [0x00E0, 0x2203, 0x00EE, 0x7001, 0xD005, 0x3005, 0x1000, 0x00EE]
+#program = [0x00E0, 0x2203, 0x00EE, 0x7001, 0xD005, 0x3005, 0x1000, 0x00EE]
+#with open("test_opcode.ch8", mode="rb") as file:
+with open("IBM Logo.ch8", mode="rb") as file:
+    program=bytearray(file.read())
+
+
 
 # load instructions into memory
 for i in range(0,len(program)):
     memory[0x200+i]=program[i]
 
-# init screen
+for i in range(0, len(program), 2):
+    opcode = memory[0x200+i] << 8 | memory[0x200+i + 1]
 
-screen=pygame.display.set_mode([640, 320])
+# init screen
+pygame.init()
+screen=pygame.display.set_mode([64 * 10, 32 * 10])
 screen.fill([0, 0, 0])
 
 # continue execution until the stack has been emptied
-while len(stack)>0:    
+while True:    
     computer.printState(stack, ip, memory, registers)
 
     # advance clock
@@ -59,10 +67,12 @@ while len(stack)>0:
     # check for key strokes
 
     # make sound?
-
+    keypressed = 4
     # compute next instruction
-    (stack, ip, memory, registers, screenData) = computer.computeInstruction(stack, ip, memory, registers, screenData)
-    f=input()
+    try:
+        (stack, ip, memory, registers, screenData, dt, st) = computer.computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypressed)
+    except:
+        f=input()
     computer.drawScreen(screen, screenData)
 
     
