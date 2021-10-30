@@ -136,10 +136,9 @@ class Chip8():
                 raise NotImplementedError
             elif lsb == 0xE:
                 # 8XYE
-                raise NotImplementedError
                 # Vx <<= 1	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.[b]
-                registers[0xF] = (vx & 0xF000) >> 12
-                registers[registerIndexX] = vx << 1
+                self.registers[0xF] = (vx & 0xF000) >> 12
+                self.registers[registerIndexX] = vx << 1
             
         elif opcodeType == 9:
             # 9XY0
@@ -238,10 +237,22 @@ class Chip8():
                 # *(I+0) = BCD(3);
                 # *(I+1) = BCD(2);
                 # *(I+2) = BCD(1);
-                # Stores the binary-coded decimal representation of VX, with the most significant of three digits at the address in I, the middle digit at I plus 1, and the least significant 
-                # digit at I plus 2. (In other words, take the decimal representation of VX, place the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones
+                # Stores the binary-coded decimal representation of VX, with the most significant of three 
+                # digits at the address in I, the middle digit at I plus 1, and the least significant 
+                # digit at I plus 2. (In other words, take the decimal representation of VX, place the 
+                # hundreds digit in memory at location in I, the tens digit at location I+1, and the ones                
                 #  digit at location I+2.);
-                raise NotImplementedError
+                onesPlace = vx % 10
+                vx-=onesPlace
+                tensPlace = (vx % 100)
+                vx-= tensPlace
+                tensPlace //= 10
+                hundredsPlace = (vx % 1000) // 100
+
+                self.memory[i] = hundredsPlace
+                self.memory[i+1] = tensPlace
+                self.memory[i+2] = onesPlace
+
 
             elif nn==0x55:
                 # FX55	MEM	reg_dump(Vx, &I)	Stores V0 to VX (including VX) in memory starting at 
