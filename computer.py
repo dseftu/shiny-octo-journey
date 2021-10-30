@@ -228,8 +228,9 @@ class Chip8():
                 self.registers[16]+=vx
 
             elif nn==0x29:
-                # FX29	MEM	I = sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
-                raise NotImplementedError
+                # FX29	MEM	I = sprite_addr[Vx]	Sets I to the location of the sprite for the character in 
+                # VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
+                self.registers[16] = 5*vx
 
             elif nn==0x33:
                 # FX33	BCD	

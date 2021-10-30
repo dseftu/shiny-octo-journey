@@ -15,7 +15,7 @@ compy.loadRom(rom)
 # computation loop
 while True:
     # print pointers, memory, and register info into console for debug
-    compy.printState()
+    #compy.printState()
 
     # advance clock
 
