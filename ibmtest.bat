@@ -1,0 +1,1 @@
+python chip.py ".\roms\IBM Logo.ch8"

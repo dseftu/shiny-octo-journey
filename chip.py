@@ -4,6 +4,7 @@
 # for now keeping this separate
 import pygame
 import computer
+import sys
 
 memory = [0] * 4096
 registers = [0] * 17 # the 17th register will serve as the I register
@@ -38,24 +39,16 @@ sprites = [
 for i in range(0,len(sprites)):
     memory[i] = sprites[i]
 
-# sample program (call subroutine that counts to ten, then return, then halts)
-#program = [0x00E0, 0x2203, 0x00EE, 0x7001, 0xD005, 0x3005, 0x1000, 0x00EE]
-#with open("test_opcode.ch8", mode="rb") as file:
-with open("IBM Logo.ch8", mode="rb") as file:
+with open(sys.argv[1], mode="rb") as file:
     program=bytearray(file.read())
-
-
 
 # load instructions into memory
 for i in range(0,len(program)):
     memory[0x200+i]=program[i]
 
-for i in range(0, len(program), 2):
-    opcode = memory[0x200+i] << 8 | memory[0x200+i + 1]
-
 # init screen
 pygame.init()
-screen=pygame.display.set_mode([64 * 10, 32 * 10])
+screen=pygame.display.set_mode([64 * 10, 32 * 10], True)
 screen.fill([0, 0, 0])
 
 # continue execution until the stack has been emptied
@@ -73,6 +66,7 @@ while True:
         (stack, ip, memory, registers, screenData, dt, st) = computer.computeInstruction(stack, ip, memory, registers, screenData, dt, st, keypressed)
     except:
         f=input()
+        quit()
     computer.drawScreen(screen, screenData)
 
     
