@@ -18,17 +18,8 @@ class Chip8():
         self.initScreen()
 
     def computeInstruction(self, keypressed):
-        opcode = self.memory[self.ip] << 8 | self.memory[self.ip + 1]
-        registerIndexX = (opcode & 0x0F00) >> 8
-        registerIndexY = (opcode & 0x00F0) >> 4
-        vx = self.registers[registerIndexX]
-        vy = self.registers[registerIndexY]
-        nnn = (opcode & 0x0FFF)
-        nn = opcode & 0x00FF
-        opcodeType = opcode >> 12
-        lsb = (opcode & 0x000F)
-        i = self.registers[16]
-        v0 = self.registers[0]
+        # moved this into it's own thing to make the method more focused
+        (opcode, registerIndexX, registerIndexY, vx, vy, nnn, nn, opcodeType, lsb, i, v0) = self.decodeOpcodeData()
 
         # take opcode and perform action
         if opcode == 0x00E0:
@@ -106,25 +97,28 @@ class Chip8():
                 # Vx ^= Vy	Sets VX to VX xor VY.
                 self.registers[registerIndexX] = vx ^ vy
             elif lsb == 4:
-                raise NotImplementedError
+                
                 # 8XY4
                 # Vx += Vy	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not.            
-                registers[registerIndexX]+=vy
-                if registers[registerIndexX] & 0xF0000 == 1:
-                    registers[registerIndexX] = 0
-                    registers[0xF] = 1 
+                self.registers[registerIndexX]+=vy
+
+                if self.registers[registerIndexX] & 0xF00 == 1:
+                    self.registers[0xF] = 1 
                 else:
-                    registers[0xF] = 0
+                    self.registers[0xF] = 0
+
+                self.registers[registerIndexX] &= 0xff
             elif lsb == 5:
-                raise NotImplementedError
                 # 8XY5
-                # Vx -= Vy	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
+                # Vx -= Vy	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when 
+                # there is not.
                 if vy > vx:
-                    registers[0xF] = 0
-                    registers[registerIndexX]-=vy
+                    self.registers[0xF] = 0                    
                 else:
-                    registers[0xF] = 1
-                    registers[registerIndexX]-=vy + 0x100
+                    self.registers[0xF] = 1
+                self.registers[registerIndexX]-=vy
+                self.registers[registerIndexX] &= 0xFF
+
             elif lsb == 6:
                 # 8XY6
                 # Vx >>= 1	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.[b]
@@ -170,7 +164,6 @@ class Chip8():
             randNum = random.randrange(0,256)
             nn = opcode & 0x00FF
             self.registers[registerIndexX] = randNum & nn
-            raise NotImplementedError
 
         elif opcodeType == 0xD:
             # DXYN
@@ -234,7 +227,6 @@ class Chip8():
             elif nn==0x1E:
                 # FX1E	MEM	I += Vx	Adds VX to I. VF is not affected.[c]
                 self.registers[16]+=vx
-                raise NotImplementedError
 
             elif nn==0x29:
                 # FX29	MEM	I = sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
@@ -252,18 +244,45 @@ class Chip8():
                 raise NotImplementedError
 
             elif nn==0x55:
-                # FX55	MEM	reg_dump(Vx, &I)	Stores V0 to VX (including VX) in memory starting at address I. The offset from I is increased by 1 for each value written, but I itself 
+                # FX55	MEM	reg_dump(Vx, &I)	Stores V0 to VX (including VX) in memory starting at 
+                # address I. The offset from I is increased by 1 for each value written, but I itself 
                 # is left unmodified.[d]
-                raise NotImplementedError
+                for j in range(0,registerIndexX+1):
+                    self.memory[i+j] = self.registers[j]
 
             elif nn==0x65:
-                # FX65	MEM	reg_load(Vx, &I)	Fills V0 to VX (including VX) with values from memory starting at address I. The offset from I is increased by 1 for each value written, 
+                # FX65	MEM	reg_load(Vx, &I)	Fills V0 to VX (including VX) with values from memory 
+                # starting at address I. The offset from I is increased by 1 for each value written, 
                 # but I itself is left unmodified.[d]
-                raise NotImplementedError
+                for j in range(0,registerIndexX+1):
+                    self.registers[j] = self.memory[i+j]
 
         self.ip+=2
 
-        
+    def decodeOpcodeData(self):
+        opcode = self.memory[self.ip] << 8 | self.memory[self.ip + 1]       
+        registerIndexX = (opcode & 0x0F00) >> 8
+        registerIndexY = (opcode & 0x00F0) >> 4
+        vx = self.registers[registerIndexX]
+        vy = self.registers[registerIndexY]
+        nnn = (opcode & 0x0FFF)
+        nn = opcode & 0x00FF
+        opcodeType = opcode >> 12
+        lsb = (opcode & 0x000F)
+        i = self.registers[16]
+        v0 = self.registers[0]
+
+        return (opcode,
+                registerIndexX, 
+                registerIndexY, 
+                vx, 
+                vy, 
+                nnn, 
+                nn, 
+                opcodeType, 
+                lsb, 
+                i, 
+                v0)
 
     def clearDisplay(self):
         # reset all bits to 0 on screen

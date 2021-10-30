@@ -25,13 +25,8 @@ while True:
     keypressed = 4
 
     # compute next instruction
-    try:
-        compy.computeInstruction(keypressed)
-    except Exception as e:
-        print(e)
-        f=input()
-        quit()
-
+    compy.computeInstruction(keypressed)
+    
     # refresh display    
     compy.drawScreen()
 
