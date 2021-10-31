@@ -3,6 +3,25 @@ import random
 
 class Chip8():
 
+    keys = {
+        0x0:49,
+        0x1:50,
+        0x2:51,
+        0x3:113,
+        0x4:119,
+        0x5:101,
+        0x6:97,
+        0x7:115,
+        0x8:100,
+        0x9:122,
+        0xa:99,
+        0xb:120,
+        0xc:113,
+        0xd:102,
+        0xe:118,
+        0xf:52
+    }
+
     def __init__(self, xResolution, yResolution):
         self.xResolution = xResolution
         self.yResolution = yResolution
@@ -20,7 +39,7 @@ class Chip8():
     def computeInstruction(self, keypressed):
         # moved this into it's own thing to make the method more focused
         (opcode, registerIndexX, registerIndexY, vx, vy, nnn, nn, opcodeType, lsb, i, v0) = self.decodeOpcodeData()
-
+        
         # take opcode and perform action
         if opcode == 0x00E0:
             self.clearDisplay()
@@ -197,12 +216,17 @@ class Chip8():
 
         elif opcodeType == 0xE:
             if nn==0x9E:
-                # EX9E	KeyOp	if (key() == Vx)	Skips the next instruction if the key stored in VX is pressed. 
+                # EX9E	KeyOp	if (key() == Vx)	Skips the next instruction if the key stored in VX is 
+                # pressed. 
                 # (Usually the next instruction is a jump to skip a code block);
-                raise NotImplementedError
+                if self.keys[vx] in keypressed:
+                    self.ip+=2
+                
             elif nn==0xA1:
-                # EXA1	KeyOp	if (key() != Vx)	Skips the next instruction if the key stored in VX is not pressed. (Usually the next instruction is a jump to skip a code block);
-                raise NotImplementedError
+                # EXA1	KeyOp	if (key() != Vx)	Skips the next instruction if the key stored in VX is
+                # pressed. (Usually the next instruction is a jump to skip a code block);
+                if self.keys[vx] not in keypressed:
+                    self.ip+=2
 
         elif opcodeType == 0xF:
             if nn==0x07:
@@ -212,8 +236,16 @@ class Chip8():
             elif nn==0x0A:
                 # FX0A	KeyOp	Vx = get_key()	A key press is awaited, and then stored in VX. 
                 # (Blocking Operation. All instruction halted until next key event);
+                
                 raise NotImplementedError
-                registers[registerIndexX] = key
+                events = pygame.event.get()
+                for event in events:
+                    if event.type == pygame.KEYDOWN:
+                        keypressed.append(event.key)
+                        if event.key == 27:
+                            halt = True
+
+                
 
             elif nn==0x15:
                 # FX15	Timer	delay_timer(Vx)	Sets the delay timer to VX.
