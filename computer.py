@@ -22,8 +22,6 @@ class Chip8():
         0xf:52
     }
 
-
-
     def __init__(self, xResolution, yResolution):
         self.xResolution = xResolution
         self.yResolution = yResolution
@@ -119,6 +117,8 @@ class Chip8():
             # 0NNN
             # Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN. 
             # Not necessary for most ROMs.
+
+            # NotImplementedError until I find a rom that uses it
             raise NotImplementedError
 
     def opcode_1XXX(self):
@@ -229,7 +229,9 @@ class Chip8():
         else:
             self.registers[0xF] = 1
             self.registers[self.registerIndexX] = (self.vy - self.vx) + 0x100
-        raise NotImplementedError # leaving this to come back and reassess if I find a rom that uses this
+        
+        # do not trust this as written, NotImplementedError until I find a rom that uses it
+        raise NotImplementedError
 
     def opcode_XXXE(self):
         # 8XYE
@@ -308,6 +310,7 @@ class Chip8():
                 self.ip+=2
 
     def opcode_FXXX(self):
+        # opcode FXXX begets more lookup
         self.opcodeNNLookup[self.nn]()
 
     def opcode_XX07(self):
@@ -318,6 +321,7 @@ class Chip8():
         # FX0A	KeyOp	Vx = get_key()	A key press is awaited, and then stored in VX. 
         # (Blocking Operation. All instruction halted until next key event);
         
+        # do not trust this as written, NotImplementedError until I find a rom that uses it
         raise NotImplementedError
         events = pygame.event.get()
         for event in events:

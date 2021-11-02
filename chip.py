@@ -16,20 +16,15 @@ halt = False
 keypressed = []
 
 gameClock = pygame.time.Clock()
-frameRate = 60
 
 # computation loop
 while not halt:
     
     # print pointers, memory, and register info into console for debug
+    # as written, leaving this uncommented kills performance
     #compy.printState()
 
-    # advance clock
-
-
-    # check for key strokes
-
-    # make sound?
+    # check for key changes
     events = pygame.event.get()
     for event in events:        
         if event.type == pygame.KEYDOWN:
@@ -41,17 +36,16 @@ while not halt:
             keypressed.remove(event.key)
             #print("Code: %d Unicode: %s" %(keypressed[-1], event.unicode))
 
-        
-    # compute next instruction
-    
+    # compute next instruction    
     compy.computeInstruction(keypressed)
     
-    
-    # refresh display   
+    # update where shapes should be   
     compy.updateScreen() 
 
+    # leaving this commented out because it doesn't seem to work as I expect it to.
     #gameClock.tick(60)
 
+    # draw the screen
     compy.drawScreen()
     
 
