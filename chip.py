@@ -1,6 +1,7 @@
 import pygame
 import computer
 import sys
+import time
 
 # initialize compy
 xResolution = 64
@@ -13,6 +14,10 @@ compy.loadInitSpriteData()
 compy.loadRom(rom)
 halt = False
 keypressed = []
+
+gameClock = pygame.time.Clock()
+frameRate = 60
+
 # computation loop
 while not halt:
     
@@ -20,6 +25,7 @@ while not halt:
     #compy.printState()
 
     # advance clock
+
 
     # check for key strokes
 
@@ -37,10 +43,17 @@ while not halt:
 
         
     # compute next instruction
+    
     compy.computeInstruction(keypressed)
     
-    # refresh display    
+    
+    # refresh display   
+    compy.updateScreen() 
+
+    #gameClock.tick(60)
+
     compy.drawScreen()
+    
 
     
     
